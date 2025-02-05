@@ -291,27 +291,44 @@ export default function AdminDashboard() {
             {estimates.map((estimate) => (
               <Card key={estimate.id}>
                 <CardHeader>
-                  <CardTitle>Estimate #{estimate.id}</CardTitle>
+                  <CardTitle>Estimate Request</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>Type: {estimate.type}</p>
-                  <p>Cost: ${estimate.cost}</p>
-                  <p>Status: {estimate.status}</p>
-                  <p>Created: {new Date(estimate.createdAt).toLocaleDateString()}</p>
-                  <div className="mt-4">
-                    <Select
-                      onValueChange={(value) => handleUpdateEstimate(estimate.id, value)}
-                      defaultValue={estimate.status}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Update status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2">
+                    <p><strong>Customer:</strong> {estimate.userId?.name ? `${estimate.userId.name} (${estimate.userId.email})` : 'Unknown User'}</p>
+                    <p><strong>Requirements:</strong> {estimate.requirements}</p>
+                    <p><strong>Price:</strong> ${estimate.price}</p>
+                    <p><strong>Status:</strong> {estimate.status}</p>
+                    <p><strong>Created:</strong> {new Date(estimate.createdAt).toLocaleDateString()}</p>
+                    {estimate.imageUrl && (
+                      <div className="mt-4">
+                        <p><strong>Reference Image:</strong></p>
+                        <img
+                          src={estimate.imageUrl}
+                          alt="Estimate reference"
+                          className="w-full h-40 object-cover rounded-md"
+                        />
+                      </div>
+                    )}
+                    <div className="mt-4">
+                      <p><strong>Explanation:</strong></p>
+                      <p className="text-sm text-gray-600">{estimate.explanation}</p>
+                    </div>
+                    <div className="mt-4">
+                      <Select
+                        onValueChange={(value) => handleUpdateEstimate(estimate.id, value)}
+                        defaultValue={estimate.status}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Update status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
