@@ -4,6 +4,7 @@ import { useAuth } from '@/store/auth'
 
 // Helper function to get cookie value
 function getCookie(name: string) {
+  if (typeof document === 'undefined') return null;
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(';').shift();
@@ -14,6 +15,7 @@ const getAuthHeaders = () => {
   const token = getCookie('token')
   return {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
 }
@@ -48,46 +50,74 @@ export async function getProduct(id: string) {
 }
 
 export async function login(email: string, password: string) {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email, password }),
-  });
-  
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Login failed' }));
-    throw new Error(error.message || 'Login failed');
-  }
-  
-  const data = await response.json();
-  
-  if (!data.access_token || !data.user || !data.user.role) {
-    throw new Error('Invalid response from server');
-  }
-  
-  // Store token in cookie
-  document.cookie = `token=${data.access_token}; path=/; max-age=86400; secure; samesite=strict`;
-  
-  // Update auth store
-  const auth = useAuth.getState();
-  auth.setUser(data.user);
-  auth.setToken(data.access_token);
-  
-  return {
-    access_token: data.access_token,
-    user: {
-      ...data.user,
+  try {
+    console.log('Starting login request with email:', email);
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Origin': window.location.origin
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    
+    console.log('Login response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
+      console.error('Login error response:', errorData);
+      throw new Error(errorData.message || 'Login failed');
+    }
+    
+    const data = await response.json();
+    console.log('Raw login response:', JSON.stringify(data, null, 2));
+    
+    if (!data.access_token || !data.user) {
+      console.error('Invalid response structure:', data);
+      throw new Error('Invalid response from server');
+    }
+    
+    // Create user data object
+    const userData = {
+      id: data.user._id || data.user.id,
+      name: data.user.name,
+      email: data.user.email,
       role: data.user.role || 'user',
       isAdmin: data.user.role === 'admin'
+    };
+    
+    console.log('Setting user data:', userData);
+    
+    // Update auth store
+    const auth = useAuth.getState();
+    auth.setToken(data.access_token);
+    auth.setUser(userData);
+    
+    // Verify cookie was set by the server
+    const token = document.cookie.split(';').find(c => c.trim().startsWith('token='));
+    if (!token) {
+      console.error('Token cookie not found after login');
+      throw new Error('Authentication failed - no token cookie');
     }
-  };
+    
+    console.log('Login successful, token cookie present');
+    
+    return {
+      access_token: data.access_token,
+      user: userData
+    };
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
 }
 
 export async function register(name: string, email: string, password: string) {
   const response = await fetch(`${API_URL}/auth/register`, {
     method: "POST",
+    credentials: 'include',
     headers: {
       "Content-Type": "application/json",
     },
@@ -98,22 +128,24 @@ export async function register(name: string, email: string, password: string) {
       role: email === 'admin@cornwallis.com' ? 'admin' : 'user',
       isAdmin: email === 'admin@cornwallis.com'
     }),
-  })
+  });
+
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Registration failed' }))
-    throw new Error(error.message || "Failed to register")
+    const error = await response.json().catch(() => ({ message: 'Registration failed' }));
+    throw new Error(error.message || "Failed to register");
   }
-  const data = await response.json()
+
+  const data = await response.json();
   
   // Store token in cookie
-  document.cookie = `token=${data.access_token}; path=/; max-age=86400; secure; samesite=strict`
+  document.cookie = `token=${data.access_token}; path=/; max-age=86400; secure; samesite=lax`;
   
   // Update auth store
   const auth = useAuth.getState();
   auth.setUser(data.user);
   auth.setToken(data.access_token);
   
-  return data
+  return data;
 }
 
 export async function createEstimate(image: File, details: { requirements: string }) {
@@ -145,12 +177,9 @@ export async function createEstimate(image: File, details: { requirements: strin
 
 export const adminApi = {
   getFurniture: async () => {
-    const token = getCookie('token');
     const response = await fetch(`${API_URL}/admin/furniture`, {
       credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch furniture');
     return response.json();
@@ -162,22 +191,25 @@ export const adminApi = {
       method: 'POST',
       credentials: 'include',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
       },
       body: formData,
     });
-    if (!response.ok) throw new Error('Failed to create furniture');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to create furniture' }));
+      throw new Error(error.message || 'Failed to create furniture');
+    }
     return response.json();
   },
 
   updateFurniture: async (id: string, data: FormData | object) => {
-    const token = getCookie('token');
     const response = await fetch(`${API_URL}/admin/furniture/${id}`, {
       method: 'PATCH',
       credentials: 'include',
       headers: {
+        ...getAuthHeaders(),
         ...(!(data instanceof FormData) && { 'Content-Type': 'application/json' }),
-        'Authorization': `Bearer ${token}`
       },
       body: data instanceof FormData ? data : JSON.stringify(data),
     });
@@ -186,54 +218,41 @@ export const adminApi = {
   },
 
   deleteFurniture: async (id: string) => {
-    const token = getCookie('token');
     const response = await fetch(`${API_URL}/admin/furniture/${id}`, {
       method: 'DELETE',
       credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to delete furniture');
     return response.json();
   },
 
   getEstimates: async () => {
-    const token = getCookie('token');
     const response = await fetch(`${API_URL}/admin/estimates`, {
       credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch estimates');
     return response.json();
   },
 
   getOrders: async (userId?: string) => {
-    const token = getCookie('token');
     const url = userId
       ? `${API_URL}/admin/orders?userId=${userId}`
       : `${API_URL}/admin/orders`;
     const response = await fetch(url, {
       credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to fetch orders');
     return response.json();
   },
 
   updateEstimate: async (estimateId: string, status: string) => {
-    const token = getCookie('token');
     const response = await fetch(`${API_URL}/admin/estimates/${estimateId}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       credentials: 'include',
+      headers: getAuthHeaders(),
       body: JSON.stringify({ status }),
     });
     if (!response.ok) throw new Error('Failed to update estimate');
@@ -241,18 +260,13 @@ export const adminApi = {
   },
 
   updateOrder: async (orderId: string, status: string) => {
-    const token = getCookie('token');
     const response = await fetch(`${API_URL}/admin/orders/${orderId}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       credentials: 'include',
+      headers: getAuthHeaders(),
       body: JSON.stringify({ status }),
     });
     if (!response.ok) throw new Error('Failed to update order');
     return response.json();
   },
 };
-

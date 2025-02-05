@@ -55,11 +55,28 @@ export class AdminController {
     },
     @UploadedFile() file?: Express.Multer.File
   ) {
-    const imageUrl = file ? `/uploads/${file.filename}` : undefined;
-    return this.adminService.createFurniture({
-      ...furnitureData,
-      imageUrl
-    });
+    try {
+      console.log('Creating furniture with data:', { ...furnitureData, file: file?.filename });
+      
+      // Convert price to number if it's a string
+      const price = typeof furnitureData.price === 'string' 
+        ? parseFloat(furnitureData.price) 
+        : furnitureData.price;
+
+      const imageUrl = file ? `/uploads/${file.filename}` : undefined;
+      
+      const result = await this.adminService.createFurniture({
+        ...furnitureData,
+        price,
+        imageUrl
+      });
+
+      console.log('Furniture created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating furniture:', error);
+      throw error;
+    }
   }
 
   @Patch('furniture/:id')

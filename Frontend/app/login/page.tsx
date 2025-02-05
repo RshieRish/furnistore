@@ -1,40 +1,61 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { login } from "@/lib/api"
-import useStore from "@/store/store"
+import { useAuth } from "@/store/auth"
+import { API_URL } from "@/config"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
   const router = useRouter()
-  const { user, setUser } = useStore()
+  const searchParams = useSearchParams()
+  const { user, isHydrated, setUser, setToken } = useAuth()
 
   useEffect(() => {
-    // Check if user is already logged in
-    if (user) {
-      console.log('User already logged in:', user);
+    // Log initial state
+    console.log('Login page mounted. Auth state:', {
+      isHydrated,
+      hasUser: !!user,
+      user,
+      isRedirecting
+    });
+
+    if (isHydrated && user && !isRedirecting) {
+      setIsRedirecting(true); // Prevent multiple redirects
+      console.log('User authenticated, redirecting:', { user });
+      
+      // Get the redirect destination
+      const from = searchParams.get('from');
+      
       if (user.role === 'admin' && user.isAdmin) {
-        router.push('/admin');
+        console.log('Admin user detected, redirecting to:', from || '/admin/dashboard');
+        router.replace(from || '/admin/dashboard');
       } else {
-        router.push('/account');
+        console.log('Regular user detected, redirecting to account');
+        router.replace('/account');
       }
     }
-  }, [user, router]);
+  }, [user, isHydrated, router, isRedirecting, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isLoading || isRedirecting) return;
+    
     setError("")
-    console.log('Attempting login with:', { email }); // Debug log
+    setIsLoading(true)
+    console.log('Starting login process with:', { email, apiUrl: API_URL });
 
     try {
       const response = await login(email, password)
-      console.log('Login response:', JSON.stringify(response, null, 2)) // Pretty print response
+      console.log('Login successful:', JSON.stringify(response, null, 2))
       
       if (!response.user || !response.user.role) {
         console.error('Invalid user data in response:', response)
@@ -42,22 +63,48 @@ export default function LoginPage() {
         return
       }
 
-      // Set user in store
-      setUser(response.user)
-      console.log('User data set in store:', response.user) // Debug log
-      
-      // Force navigation
-      if (response.user.role === 'admin' && response.user.isAdmin) {
-        console.log('User is admin, forcing navigation to admin dashboard')
-        window.location.href = '/admin'
-      } else {
-        console.log('User is not admin, forcing navigation to account page')
-        window.location.href = '/account'
-      }
+      // Update auth store
+      setToken(response.access_token);
+      setUser(response.user);
+
+      // Let the useEffect handle redirection
+      setIsRedirecting(true);
+
     } catch (error: any) {
-      console.error('Login error details:', error)
-      setError(error.message || "Login failed. Please try again.")
+      console.error('Login error:', error)
+      if (error.message === 'Failed to fetch') {
+        setError("Could not connect to server. Please try again.")
+      } else {
+        setError(error.message || "Login failed. Please try again.")
+      }
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  // Show loading state while hydrating
+  if (!isHydrated) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl mb-4">Loading...</h2>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show redirecting state
+  if (isRedirecting) {
+    const from = searchParams.get('from');
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl mb-4">Redirecting to {from || 'dashboard'}...</h2>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -66,7 +113,14 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit} className="max-w-md mx-auto">
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <div className="mb-4">
-          <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Input 
+            type="email" 
+            placeholder="Email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            disabled={isLoading || isRedirecting}
+            required 
+          />
         </div>
         <div className="mb-4">
           <Input
@@ -74,11 +128,12 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading || isRedirecting}
             required
           />
         </div>
-        <Button type="submit" className="w-full">
-          Login
+        <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
+          {isLoading ? 'Logging in...' : isRedirecting ? 'Redirecting...' : 'Login'}
         </Button>
         <p className="mt-4 text-center">
           Don't have an account?{" "}

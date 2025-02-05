@@ -58,7 +58,14 @@ export class AdminService {
   }
 
   async getAllEstimates() {
-    return this.estimateModel.find().exec();
+    return this.estimateModel.find()
+      .populate({
+        path: 'userId',
+        select: 'email name',
+        model: 'User'
+      })
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
   async getAllOrders(userId?: string) {

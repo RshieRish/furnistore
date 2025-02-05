@@ -1,80 +1,63 @@
-# Cornwallis Exchange - Furniture Appraisal Platform
+# FurniStore - AI-Powered Furniture Store
 
 A modern web application that provides AI-powered furniture appraisals and estimates using computer vision technology. The platform includes secure payment processing and comprehensive admin analytics.
 
-![Platform Screenshot](docs/images/platform-screenshot.png)
+## 🖼️ Screenshots
+
+### Admin Dashboard
+![Admin Dashboard](./docs/images/admin-dashboard.png)
+*Admin dashboard showing orders, estimates, and furniture management*
+
+### Estimate Page
+![Estimate Page](./docs/images/estimate-page.png)
+*AI-powered estimate page with real-time price calculation*
+
+### Home Page
+![Home Page](./docs/images/home-page.png)
+*Modern and responsive home page showcasing featured products*
 
 ## 🌟 Features
 
-- 🤖 AI-powered furniture appraisal
-- 💰 Real-time price estimates
-- 💳 Secure payment processing with Stripe
-- 📊 Admin financial dashboard
-- 🔒 JWT authentication
-- 📱 Responsive design
-- ⚡ Real-time updates
-- 📈 Analytics and reporting
+* 🤖 AI-powered furniture appraisal
+* 💰 Real-time price estimates
+* 💳 Secure payment processing
+* 📊 Admin dashboard with analytics
+* 🔒 JWT authentication
+* 📱 Responsive design
+* ⚡ Real-time updates
+* 📈 Analytics and reporting
 
 ## 🏗️ Architecture
 
 The project is split into two main components:
 
 ### Frontend (Next.js)
-- Modern UI built with Next.js 14
-- Real-time updates with Socket.IO
-- Secure authentication
-- Responsive design with Tailwind CSS
-- Interactive charts with Recharts
+* Modern UI built with Next.js 14
+* Real-time updates with Socket.IO
+* Secure authentication
+* Responsive design with Tailwind CSS
+* shadcn/ui components
 
 ### Backend (NestJS)
-- Robust API with NestJS
-- MongoDB database
-- Groq Vision API integration
-- Stripe payment processing
-- WebSocket support
-- JWT authentication
+* Robust API with NestJS
+* MongoDB database
+* Groq Vision API integration
+* WebSocket support
+* JWT authentication
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18.x or later
-- MongoDB 4.4 or later
-- npm or yarn
-- Groq API account
-- Stripe account
-
-### Environment Setup
-
-1. Backend (.env):
-```env
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017/cornwallis
-
-# JWT
-JWT_SECRET=your-jwt-secret
-JWT_EXPIRATION=24h
-
-# Groq API
-GROQ_API_KEY=your-groq-api-key
-
-# Stripe
-STRIPE_SECRET_KEY=your-stripe-secret-key
-STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
-```
-
-2. Frontend (.env.local):
-```env
-NEXT_PUBLIC_API_URL=http://localhost:4000
-NEXT_PUBLIC_WS_URL=ws://localhost:4000
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
-```
+* Node.js 18.x or later
+* MongoDB 4.4 or later
+* npm or yarn
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/cornwallis-exchange.git
-cd cornwallis-exchange
+git clone https://github.com/RshieRish/furnistore.git
+cd furnistore
 ```
 
 2. Install backend dependencies:
@@ -103,47 +86,31 @@ cd Frontend
 npm run dev
 ```
 
-## 📸 Screenshots
-
-### Home Page
-![Home Page](docs/images/home.png)
-
-### Estimate Page
-![Estimate Page](docs/images/estimate.png)
-
-### Admin Dashboard
-![Admin Dashboard](docs/images/admin.png)
-
 ## 🔧 Tech Stack
 
 ### Frontend
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Zustand
-- Socket.IO Client
-- Stripe.js
-- Recharts
+* Next.js 14
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+* Zustand
+* Socket.IO Client
 
 ### Backend
-- NestJS
-- TypeScript
-- MongoDB with Mongoose
-- Passport.js
-- Socket.IO
-- Stripe
-- Groq Vision API
+* NestJS
+* TypeScript
+* MongoDB with Mongoose
+* Passport.js
+* Socket.IO
+* Groq Vision API
 
 ## 🛡️ Security Features
-
-- JWT authentication
-- HTTP-only cookies
-- Role-based access control
-- Secure payment processing
-- Input validation
-- Rate limiting
-- CORS protection
+* JWT authentication
+* HTTP-only cookies
+* Role-based access control
+* Input validation
+* Rate limiting
+* CORS protection
 
 ## 🤝 Contributing
 

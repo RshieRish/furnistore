@@ -27,11 +27,16 @@ export interface Furniture {
 
 export interface Estimate {
   id: string
-  type: string
-  cost: number
-  status: string
-  userId: string
-  description?: string
+  userId: {
+    _id: string
+    name: string
+    email: string
+  }
+  imageUrl: string
+  requirements: string
+  price: number
+  explanation: string
+  status: 'pending' | 'approved' | 'rejected'
   createdAt: string
 }
 
