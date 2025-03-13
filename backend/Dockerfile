@@ -27,12 +27,21 @@ COPY . .
 
 # List files to debug
 RUN ls -la
+RUN echo "Checking for direct-api.js:"
+RUN ls -la direct-api.js || echo "direct-api.js not found"
+RUN echo "Checking for healthcheck.js:"
+RUN ls -la healthcheck.js || echo "healthcheck.js not found"
 
 # Build the application
 RUN npm run build
 
 # Expose the port
 EXPOSE 4000
+EXPOSE 8080
 
-# Use direct-api.js as the entry point
-CMD ["node", "direct-api.js"] 
+# Create a startup script
+RUN echo '#!/bin/bash\nif [ -f "./direct-api.js" ]; then\n  echo "Starting with direct-api.js"\n  node ./direct-api.js\nelse\n  echo "direct-api.js not found, using healthcheck.js"\n  node ./healthcheck.js\nfi' > start.sh
+RUN chmod +x start.sh
+
+# Use the startup script as the entry point
+CMD ["./start.sh"] 
