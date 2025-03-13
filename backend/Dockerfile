@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -32,6 +32,9 @@ RUN ls -la direct-api.js || echo "direct-api.js not found"
 RUN echo "Checking for healthcheck.js:"
 RUN ls -la healthcheck.js || echo "healthcheck.js not found"
 
+# Create a simple healthcheck file directly in the Dockerfile
+RUN echo 'const http = require("http");\n\nconst server = http.createServer((req, res) => {\n  console.log(`Received request: ${req.method} ${req.url}`);\n  res.writeHead(200, { "Content-Type": "application/json" });\n  res.end(JSON.stringify({ status: "ok", message: "Backend API is healthy" }));\n});\n\nconst port = process.env.PORT || 8080;\nserver.listen(port, "0.0.0.0", () => {\n  console.log(`Server running on port ${port}`);\n});\n' > inline-healthcheck.js
+
 # Build the application
 RUN npm run build
 
@@ -39,9 +42,13 @@ RUN npm run build
 EXPOSE 4000
 EXPOSE 8080
 
-# Create a startup script
-RUN echo '#!/bin/bash\nif [ -f "./direct-api.js" ]; then\n  echo "Starting with direct-api.js"\n  node ./direct-api.js\nelse\n  echo "direct-api.js not found, using healthcheck.js"\n  node ./healthcheck.js\nfi' > start.sh
-RUN chmod +x start.sh
+# Create a startup script with fallbacks
+RUN echo '#!/bin/sh' > start.sh && \
+    echo 'echo "Starting server..."' >> start.sh && \
+    echo 'echo "Files in /app:"' >> start.sh && \
+    echo 'ls -la /app' >> start.sh && \
+    echo 'node server.js' >> start.sh && \
+    chmod +x start.sh
 
 # Use the startup script as the entry point
 CMD ["./start.sh"] 
