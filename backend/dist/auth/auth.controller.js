@@ -15,19 +15,48 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
+const login_dto_1 = require("./dto/login.dto");
 const create_user_dto_1 = require("../users/dto/create-user.dto");
-const local_auth_guard_1 = require("./guards/local-auth.guard");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 const swagger_1 = require("@nestjs/swagger");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async register(createUserDto) {
-        return this.authService.register(createUserDto);
+    async register(createUserDto, response) {
+        const result = await this.authService.register(createUserDto);
+        response.cookie('token', result.access_token, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 24 * 60 * 60 * 1000
+        });
+        return result;
     }
-    async login(req) {
-        return this.authService.login(req.user);
+    async login(loginDto, response) {
+        try {
+            console.log('Login attempt for:', loginDto.email);
+            const user = await this.authService.validateUser(loginDto.email, loginDto.password);
+            if (!user) {
+                throw new common_1.HttpException('Invalid credentials', common_1.HttpStatus.UNAUTHORIZED);
+            }
+            console.log('User validated:', user.email);
+            const result = await this.authService.login(user);
+            console.log('Login successful for:', user.email);
+            response.cookie('token', result.access_token, {
+                httpOnly: false,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+                maxAge: 24 * 60 * 60 * 1000
+            });
+            return result;
+        }
+        catch (error) {
+            console.error('Login error:', error);
+            throw new common_1.HttpException(error.message || 'Login failed', error.status || common_1.HttpStatus.UNAUTHORIZED);
+        }
     }
     getProfile(req) {
         return req.user;
@@ -39,18 +68,19 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Register a new user' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'User successfully registered' }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto]),
+    __metadata("design:paramtypes", [create_user_dto_1.CreateUserDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
 __decorate([
-    (0, common_1.UseGuards)(local_auth_guard_1.LocalAuthGuard),
     (0, common_1.Post)('login'),
     (0, swagger_1.ApiOperation)({ summary: 'Login user' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'User successfully logged in' }),
-    __param(0, (0, common_1.Request)()),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [login_dto_1.LoginDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([

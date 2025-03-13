@@ -19,18 +19,30 @@ const create_order_dto_1 = require("./dto/create-order.dto");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const get_user_decorator_1 = require("../auth/decorators/get-user.decorator");
 const user_schema_1 = require("../users/schemas/user.schema");
+const products_service_1 = require("../products/products.service");
 let OrdersController = class OrdersController {
-    constructor(ordersService) {
+    constructor(ordersService, productsService) {
         this.ordersService = ordersService;
+        this.productsService = productsService;
     }
     async create(createOrderDto, user) {
+        for (const item of createOrderDto.items) {
+            const product = await this.productsService.findOne(item.productId);
+            if (!product) {
+                throw new common_1.NotFoundException(`Product with ID ${item.productId} not found`);
+            }
+        }
         return await this.ordersService.create(createOrderDto, user);
     }
     async findAll(user) {
         return await this.ordersService.findAll(user);
     }
     async findOne(id, user) {
-        return await this.ordersService.findOne(id, user);
+        const order = await this.ordersService.findOne(id, user);
+        if (!order) {
+            throw new common_1.NotFoundException(`Order with ID ${id} not found`);
+        }
+        return order;
     }
 };
 exports.OrdersController = OrdersController;
@@ -60,6 +72,7 @@ __decorate([
 exports.OrdersController = OrdersController = __decorate([
     (0, common_1.Controller)('orders'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [orders_service_1.OrdersService])
+    __metadata("design:paramtypes", [orders_service_1.OrdersService,
+        products_service_1.ProductsService])
 ], OrdersController);
 //# sourceMappingURL=orders.controller.js.map

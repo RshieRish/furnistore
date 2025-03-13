@@ -20,6 +20,9 @@ export class Furniture extends Document {
 
   @Prop()
   imageUrl?: string;
+  
+  @Prop({ type: [String], default: [] })
+  imageUrls?: string[];
 }
 
 export const FurnitureSchema = SchemaFactory.createForClass(Furniture); 

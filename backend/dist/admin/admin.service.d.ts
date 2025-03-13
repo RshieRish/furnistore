@@ -10,12 +10,16 @@ export declare class AdminService {
     getAllFurniture(): Promise<(import("mongoose").Document<unknown, {}, Furniture> & Furniture & {
         _id: import("mongoose").Types.ObjectId;
     })[]>;
+    getPublicFurniture(category?: string): Promise<(import("mongoose").Document<unknown, {}, Furniture> & Furniture & {
+        _id: import("mongoose").Types.ObjectId;
+    })[]>;
     createFurniture(furnitureData: {
         name: string;
         price: number;
         category: string;
         description?: string;
         imageUrl?: string;
+        imageUrls?: string[];
     }): Promise<import("mongoose").Document<unknown, {}, Furniture> & Furniture & {
         _id: import("mongoose").Types.ObjectId;
     }>;
@@ -26,22 +30,27 @@ export declare class AdminService {
         status?: string;
         description?: string;
         imageUrl?: string;
+        imageUrls?: string[];
     }): Promise<import("mongoose").Document<unknown, {}, Furniture> & Furniture & {
         _id: import("mongoose").Types.ObjectId;
     }>;
     deleteFurniture(id: string): Promise<{
         message: string;
     }>;
-    getAllEstimates(): Promise<(import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
+    getAllEstimates(): Promise<Omit<import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
         _id: import("mongoose").Types.ObjectId;
-    })[]>;
+    }, never>[]>;
     getAllOrders(userId?: string): Promise<(import("mongoose").Document<unknown, {}, Order> & Order & {
         _id: import("mongoose").Types.ObjectId;
     })[]>;
-    updateEstimate(id: string, status: string): Promise<import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
+    updateEstimate(id: string, updateData: {
+        status: string;
+    }): Promise<import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
         _id: import("mongoose").Types.ObjectId;
     }>;
-    updateOrder(id: string, status: string): Promise<import("mongoose").Document<unknown, {}, Order> & Order & {
+    updateOrder(id: string, updateData: {
+        status: string;
+    }): Promise<import("mongoose").Document<unknown, {}, Order> & Order & {
         _id: import("mongoose").Types.ObjectId;
     }>;
 }

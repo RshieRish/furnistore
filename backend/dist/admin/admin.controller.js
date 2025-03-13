@@ -15,32 +15,96 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
-const multer_1 = require("multer");
-const path_1 = require("path");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
-const roles_guard_1 = require("../auth/guards/roles.guard");
-const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const admin_guard_1 = require("../auth/guards/admin.guard");
 const admin_service_1 = require("./admin.service");
+const path_1 = require("path");
+const multer_1 = require("multer");
+const s3_service_1 = require("../shared/s3.service");
+const public_decorator_1 = require("../auth/decorators/public.decorator");
 let AdminController = class AdminController {
-    constructor(adminService) {
+    constructor(adminService, s3Service) {
         this.adminService = adminService;
+        this.s3Service = s3Service;
     }
     async getFurniture() {
         return this.adminService.getAllFurniture();
     }
-    async createFurniture(furnitureData, file) {
-        const imageUrl = file ? `/uploads/${file.filename}` : undefined;
-        return this.adminService.createFurniture({
-            ...furnitureData,
-            imageUrl
-        });
+    async getPublicFurniture(category) {
+        return this.adminService.getPublicFurniture(category);
     }
-    async updateFurniture(id, updateData, file) {
-        const dataToUpdate = { ...updateData };
-        if (file) {
-            dataToUpdate.imageUrl = `/uploads/${file.filename}`;
+    async createFurniture(furnitureData, files) {
+        try {
+            console.log('Creating furniture with data:', { ...furnitureData, files: files?.map(f => f.originalname) });
+            const price = typeof furnitureData.price === 'string'
+                ? parseFloat(furnitureData.price)
+                : furnitureData.price;
+            let imageUrl;
+            const imageUrls = [];
+            if (files && files.length > 0) {
+                for (const file of files) {
+                    const timestamp = Date.now();
+                    const randomString = Math.random().toString(36).substring(2, 15);
+                    const key = `furniture/${timestamp}-${randomString}${(0, path_1.extname)(file.originalname)}`;
+                    const s3Url = await this.s3Service.uploadFile(file, key);
+                    imageUrls.push(s3Url);
+                }
+                imageUrl = imageUrls[0];
+            }
+            const result = await this.adminService.createFurniture({
+                ...furnitureData,
+                price,
+                imageUrl,
+                imageUrls
+            });
+            console.log('Furniture created successfully:', result);
+            return result;
         }
-        return this.adminService.updateFurniture(id, dataToUpdate);
+        catch (error) {
+            console.error('Error creating furniture:', error);
+            throw error;
+        }
+    }
+    async updateFurniture(id, updateData, files) {
+        try {
+            console.log('Updating furniture with ID:', id);
+            console.log('Update data received:', updateData);
+            console.log('Files received:', files?.map(f => f.originalname) || 'No files');
+            const dataToUpdate = { ...updateData };
+            if (typeof dataToUpdate.price === 'string') {
+                dataToUpdate.price = parseFloat(dataToUpdate.price);
+            }
+            if (files && files.length > 0) {
+                console.log('Processing files for upload to S3...');
+                const imageUrls = [];
+                for (const file of files) {
+                    try {
+                        const timestamp = Date.now();
+                        const randomString = Math.random().toString(36).substring(2, 15);
+                        const key = `furniture/${timestamp}-${randomString}${(0, path_1.extname)(file.originalname)}`;
+                        console.log(`Uploading file ${file.originalname} to S3 with key ${key}...`);
+                        const s3Url = await this.s3Service.uploadFile(file, key);
+                        console.log('File uploaded successfully, S3 URL:', s3Url);
+                        imageUrls.push(s3Url);
+                    }
+                    catch (uploadError) {
+                        console.error('Error uploading file to S3:', uploadError);
+                        throw new Error(`Failed to upload file ${file.originalname} to S3: ${uploadError.message}`);
+                    }
+                }
+                dataToUpdate.imageUrl = imageUrls[0];
+                dataToUpdate.imageUrls = imageUrls;
+                console.log('Image URLs set:', { imageUrl: dataToUpdate.imageUrl, imageUrls: dataToUpdate.imageUrls });
+            }
+            console.log('Calling adminService.updateFurniture with data:', dataToUpdate);
+            const result = await this.adminService.updateFurniture(id, dataToUpdate);
+            console.log('Furniture updated successfully:', result);
+            return result;
+        }
+        catch (error) {
+            console.error('Error updating furniture:', error);
+            throw error;
+        }
     }
     async deleteFurniture(id) {
         return this.adminService.deleteFurniture(id);
@@ -51,11 +115,11 @@ let AdminController = class AdminController {
     async getOrders(userId) {
         return this.adminService.getAllOrders(userId);
     }
-    async updateEstimate(id, status) {
-        return this.adminService.updateEstimate(id, status);
+    async updateEstimate(id, updateData) {
+        return this.adminService.updateEstimate(id, updateData);
     }
-    async updateOrder(id, status) {
-        return this.adminService.updateOrder(id, status);
+    async updateOrder(id, updateData) {
+        return this.adminService.updateOrder(id, updateData);
     }
 };
 exports.AdminController = AdminController;
@@ -66,18 +130,20 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "getFurniture", null);
 __decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('public/furniture'),
+    __param(0, (0, common_1.Query)('category')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminController.prototype, "getPublicFurniture", null);
+__decorate([
     (0, common_1.Post)('furniture'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', {
-        storage: (0, multer_1.diskStorage)({
-            destination: './uploads',
-            filename: (req, file, callback) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                callback(null, `${uniqueSuffix}${(0, path_1.extname)(file.originalname)}`);
-            },
-        }),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('image', 5, {
+        storage: (0, multer_1.memoryStorage)(),
         fileFilter: (req, file, callback) => {
             if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-                return callback(new Error('Only image files are allowed!'), false);
+                return callback(new common_1.BadRequestException('Only image files are allowed!'), false);
             }
             callback(null, true);
         },
@@ -86,24 +152,18 @@ __decorate([
         }
     })),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.UploadedFiles)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:paramtypes", [Object, Array]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "createFurniture", null);
 __decorate([
     (0, common_1.Patch)('furniture/:id'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('image', {
-        storage: (0, multer_1.diskStorage)({
-            destination: './uploads',
-            filename: (req, file, callback) => {
-                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-                callback(null, `${uniqueSuffix}${(0, path_1.extname)(file.originalname)}`);
-            },
-        }),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('image', 5, {
+        storage: (0, multer_1.memoryStorage)(),
         fileFilter: (req, file, callback) => {
             if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-                return callback(new Error('Only image files are allowed!'), false);
+                return callback(new common_1.BadRequestException('Only image files are allowed!'), false);
             }
             callback(null, true);
         },
@@ -113,9 +173,9 @@ __decorate([
     })),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
-    __param(2, (0, common_1.UploadedFile)()),
+    __param(2, (0, common_1.UploadedFiles)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:paramtypes", [String, Object, Array]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "updateFurniture", null);
 __decorate([
@@ -141,23 +201,23 @@ __decorate([
 __decorate([
     (0, common_1.Patch)('estimates/:id'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)('status')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "updateEstimate", null);
 __decorate([
     (0, common_1.Patch)('orders/:id'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)('status')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AdminController.prototype, "updateOrder", null);
 exports.AdminController = AdminController = __decorate([
     (0, common_1.Controller)('admin'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('admin'),
-    __metadata("design:paramtypes", [admin_service_1.AdminService])
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, admin_guard_1.AdminGuard),
+    __metadata("design:paramtypes", [admin_service_1.AdminService,
+        s3_service_1.S3Service])
 ], AdminController);
 //# sourceMappingURL=admin.controller.js.map

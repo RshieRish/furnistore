@@ -1,11 +1,12 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { AdminService } from './admin.service';
+import { extname } from 'path';
+import { memoryStorage } from 'multer';
+import { S3Service } from '../shared/s3.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 interface UpdateFurnitureDto {
   name?: string;
@@ -14,31 +15,34 @@ interface UpdateFurnitureDto {
   status?: string;
   description?: string;
   imageUrl?: string;
+  imageUrls?: string[];
 }
 
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   @Get('furniture')
   async getFurniture() {
     return this.adminService.getAllFurniture();
   }
 
+  @Public()
+  @Get('public/furniture')
+  async getPublicFurniture(@Query('category') category?: string) {
+    return this.adminService.getPublicFurniture(category);
+  }
+
   @Post('furniture')
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        callback(null, `${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
+  @UseInterceptors(FilesInterceptor('image', 5, {
+    storage: memoryStorage(),
     fileFilter: (req, file, callback) => {
       if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-        return callback(new Error('Only image files are allowed!'), false);
+        return callback(new BadRequestException('Only image files are allowed!'), false);
       }
       callback(null, true);
     },
@@ -53,22 +57,40 @@ export class AdminController {
       category: string;
       description?: string;
     },
-    @UploadedFile() file?: Express.Multer.File
+    @UploadedFiles() files?: Express.Multer.File[]
   ) {
     try {
-      console.log('Creating furniture with data:', { ...furnitureData, file: file?.filename });
+      console.log('Creating furniture with data:', { ...furnitureData, files: files?.map(f => f.originalname) });
       
       // Convert price to number if it's a string
       const price = typeof furnitureData.price === 'string' 
         ? parseFloat(furnitureData.price) 
         : furnitureData.price;
 
-      const imageUrl = file ? `/uploads/${file.filename}` : undefined;
+      let imageUrl;
+      const imageUrls = [];
+
+      // Upload files to S3 if any
+      if (files && files.length > 0) {
+        // Upload each file to S3
+        for (const file of files) {
+          const timestamp = Date.now();
+          const randomString = Math.random().toString(36).substring(2, 15);
+          const key = `furniture/${timestamp}-${randomString}${extname(file.originalname)}`;
+          
+          const s3Url = await this.s3Service.uploadFile(file, key);
+          imageUrls.push(s3Url);
+        }
+        
+        // Use the first image as the main imageUrl for backward compatibility
+        imageUrl = imageUrls[0];
+      }
       
       const result = await this.adminService.createFurniture({
         ...furnitureData,
         price,
-        imageUrl
+        imageUrl,
+        imageUrls
       });
 
       console.log('Furniture created successfully:', result);
@@ -80,17 +102,11 @@ export class AdminController {
   }
 
   @Patch('furniture/:id')
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        callback(null, `${uniqueSuffix}${extname(file.originalname)}`);
-      },
-    }),
+  @UseInterceptors(FilesInterceptor('image', 5, {
+    storage: memoryStorage(),
     fileFilter: (req, file, callback) => {
       if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-        return callback(new Error('Only image files are allowed!'), false);
+        return callback(new BadRequestException('Only image files are allowed!'), false);
       }
       callback(null, true);
     },
@@ -101,13 +117,55 @@ export class AdminController {
   async updateFurniture(
     @Param('id') id: string,
     @Body() updateData: UpdateFurnitureDto,
-    @UploadedFile() file?: Express.Multer.File
+    @UploadedFiles() files?: Express.Multer.File[]
   ) {
-    const dataToUpdate: UpdateFurnitureDto = { ...updateData };
-    if (file) {
-      dataToUpdate.imageUrl = `/uploads/${file.filename}`;
+    try {
+      console.log('Updating furniture with ID:', id);
+      console.log('Update data received:', updateData);
+      console.log('Files received:', files?.map(f => f.originalname) || 'No files');
+      
+      const dataToUpdate: UpdateFurnitureDto = { ...updateData };
+      
+      // Convert price to number if it's a string
+      if (typeof dataToUpdate.price === 'string') {
+        dataToUpdate.price = parseFloat(dataToUpdate.price);
+      }
+      
+      if (files && files.length > 0) {
+        console.log('Processing files for upload to S3...');
+        const imageUrls = [];
+        
+        // Upload each file to S3
+        for (const file of files) {
+          try {
+            const timestamp = Date.now();
+            const randomString = Math.random().toString(36).substring(2, 15);
+            const key = `furniture/${timestamp}-${randomString}${extname(file.originalname)}`;
+            
+            console.log(`Uploading file ${file.originalname} to S3 with key ${key}...`);
+            const s3Url = await this.s3Service.uploadFile(file, key);
+            console.log('File uploaded successfully, S3 URL:', s3Url);
+            imageUrls.push(s3Url);
+          } catch (uploadError) {
+            console.error('Error uploading file to S3:', uploadError);
+            throw new Error(`Failed to upload file ${file.originalname} to S3: ${uploadError.message}`);
+          }
+        }
+        
+        // Use the first image as the main imageUrl for backward compatibility
+        dataToUpdate.imageUrl = imageUrls[0];
+        dataToUpdate.imageUrls = imageUrls;
+        console.log('Image URLs set:', { imageUrl: dataToUpdate.imageUrl, imageUrls: dataToUpdate.imageUrls });
+      }
+      
+      console.log('Calling adminService.updateFurniture with data:', dataToUpdate);
+      const result = await this.adminService.updateFurniture(id, dataToUpdate);
+      console.log('Furniture updated successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('Error updating furniture:', error);
+      throw error;
     }
-    return this.adminService.updateFurniture(id, dataToUpdate);
   }
 
   @Delete('furniture/:id')
@@ -128,16 +186,16 @@ export class AdminController {
   @Patch('estimates/:id')
   async updateEstimate(
     @Param('id') id: string,
-    @Body('status') status: string,
+    @Body() updateData: { status: string }
   ) {
-    return this.adminService.updateEstimate(id, status);
+    return this.adminService.updateEstimate(id, updateData);
   }
 
   @Patch('orders/:id')
   async updateOrder(
     @Param('id') id: string,
-    @Body('status') status: string,
+    @Body() updateData: { status: string }
   ) {
-    return this.adminService.updateOrder(id, status);
+    return this.adminService.updateOrder(id, updateData);
   }
 } 

@@ -18,7 +18,6 @@ const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const estimate_schema_1 = require("./schemas/estimate.schema");
 const config_1 = require("@nestjs/config");
-const node_fetch_1 = require("node-fetch");
 const path = require("path");
 const estimates_gateway_1 = require("./estimates.gateway");
 const Sharp = require("sharp");
@@ -103,7 +102,8 @@ Customer Requirements: ${requirements}`;
                 .toBuffer();
             const base64Image = imageBuffer.toString('base64');
             console.log('Sending request to Groq API...');
-            const response = await (0, node_fetch_1.default)(this.groqApiUrl, {
+            const { default: fetch } = await Promise.resolve().then(() => require('node-fetch'));
+            const response = await fetch(this.groqApiUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${this.configService.get('GROQ_API_KEY')}`,

@@ -14,6 +14,7 @@ const admin_service_1 = require("./admin.service");
 const furniture_schema_1 = require("../furniture/schemas/furniture.schema");
 const estimate_schema_1 = require("../estimates/schemas/estimate.schema");
 const order_schema_1 = require("../orders/schemas/order.schema");
+const shared_module_1 = require("../shared/shared.module");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
@@ -25,6 +26,7 @@ exports.AdminModule = AdminModule = __decorate([
                 { name: estimate_schema_1.Estimate.name, schema: estimate_schema_1.EstimateSchema },
                 { name: order_schema_1.Order.name, schema: order_schema_1.OrderSchema },
             ]),
+            shared_module_1.SharedModule,
         ],
         controllers: [admin_controller_1.AdminController],
         providers: [admin_service_1.AdminService],

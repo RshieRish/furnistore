@@ -28,6 +28,15 @@ let AdminService = class AdminService {
     async getAllFurniture() {
         return this.furnitureModel.find().exec();
     }
+    async getPublicFurniture(category) {
+        if (category) {
+            return this.furnitureModel.find({
+                category: { $regex: new RegExp(category, 'i') },
+                status: 'available'
+            }).exec();
+        }
+        return this.furnitureModel.find({ status: 'available' }).exec();
+    }
     async createFurniture(furnitureData) {
         const newFurniture = new this.furnitureModel(furnitureData);
         return newFurniture.save();
@@ -47,17 +56,24 @@ let AdminService = class AdminService {
         return { message: 'Furniture deleted successfully' };
     }
     async getAllEstimates() {
-        return this.estimateModel.find().exec();
+        return this.estimateModel.find()
+            .populate({
+            path: 'userId',
+            select: 'email name',
+            model: 'User'
+        })
+            .sort({ createdAt: -1 })
+            .exec();
     }
     async getAllOrders(userId) {
         const query = userId ? { userId } : {};
         return this.orderModel.find(query).exec();
     }
-    async updateEstimate(id, status) {
-        return this.estimateModel.findByIdAndUpdate(id, { status }, { new: true }).exec();
+    async updateEstimate(id, updateData) {
+        return this.estimateModel.findByIdAndUpdate(id, { status: updateData.status }, { new: true }).exec();
     }
-    async updateOrder(id, status) {
-        return this.orderModel.findByIdAndUpdate(id, { status }, { new: true }).exec();
+    async updateOrder(id, updateData) {
+        return this.orderModel.findByIdAndUpdate(id, { status: updateData.status }, { new: true }).exec();
     }
 };
 exports.AdminService = AdminService;

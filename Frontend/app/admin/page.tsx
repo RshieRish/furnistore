@@ -164,11 +164,59 @@ export default function AdminDashboard() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button variant="outline" onClick={() => router.push('/')}>
-          Back to Site
-        </Button>
+      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+      <div className="text-right mb-4">
+        <p>Welcome back, {user?.name || 'Admin User'}</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{orders.length}</p>
+            <Button 
+              variant="link" 
+              className="p-0 mt-2"
+              onClick={() => router.push('/admin/orders')}
+            >
+              View All Orders →
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Estimates</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{estimates.length}</p>
+            <Button 
+              variant="link" 
+              className="p-0 mt-2"
+              onClick={() => router.push('/admin/estimates')}
+            >
+              View All Estimates →
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Furniture Items</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{furniture.length}</p>
+            <Button 
+              variant="link" 
+              className="p-0 mt-2"
+              onClick={() => router.push('/admin/furniture')}
+            >
+              Manage Inventory →
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue="furniture">

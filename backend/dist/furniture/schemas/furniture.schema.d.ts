@@ -6,6 +6,7 @@ export declare class Furniture extends Document {
     status: string;
     description?: string;
     imageUrl?: string;
+    imageUrls?: string[];
 }
 export declare const FurnitureSchema: import("mongoose").Schema<Furniture, import("mongoose").Model<Furniture, any, any, any, Document<unknown, any, Furniture> & Furniture & {
     _id: import("mongoose").Types.ObjectId;

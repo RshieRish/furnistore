@@ -1,20 +1,29 @@
-import type React from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
-const Hero: React.FC = () => {
+export default function Hero() {
   return (
-    <section className="relative bg-gray-100 py-24">
-      <div className="container mx-auto px-4">
-        <div className="max-w-3xl">
-          <h1 className="text-5xl font-bold mb-4">Welcome to Our Furniture Store</h1>
-          <p className="text-xl mb-8">Discover beautiful, high-quality furniture for every room in your home.</p>
-          <Button size="lg">Shop Now</Button>
+    <section className="relative h-[600px] bg-[url('/images/hero-bg.jpg')] bg-cover bg-center">
+      <div className="absolute inset-0 bg-black/40" />
+      <div className="relative h-full container mx-auto px-4 flex flex-col justify-center items-start">
+        <div className="max-w-xl">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
+            Elevate Your Space with Modern Furniture
+          </h1>
+          <p className="text-lg text-white/90 mb-8">
+            Discover premium quality furniture that combines style, comfort, and functionality for every room in your home.
+          </p>
+          <div className="flex flex-wrap gap-4">
+            <Button size="lg" asChild>
+              <Link href="/products">Shop Now</Link>
+            </Button>
+            <Button size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-black" asChild>
+              <Link href="/collections">View Collections</Link>
+            </Button>
+          </div>
         </div>
       </div>
-      <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-20 bg-cover bg-center" />
     </section>
   )
 }
-
-export default Hero
 

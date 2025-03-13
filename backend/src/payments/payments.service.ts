@@ -13,12 +13,16 @@ export class PaymentsService {
     @InjectModel(Payment.name) private paymentModel: Model<PaymentDocument>,
     private configService: ConfigService,
   ) {
-    this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY'), {
+    // Use a fallback value for Stripe API key if not provided in environment variables
+    const stripeSecretKey = this.configService.get('STRIPE_SECRET_KEY') || 'sk_test_51QwVnKSDylfS10gkcy2mvo1SylJpidJ4azq6q9UB4fvYzMnoysH1rZ5Pj7HS3PYUwsHUEu5WYrcgCfeuUUdqJgXu00F4tLw02I';
+    console.log('Initializing Stripe with API key');
+    
+    this.stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2025-01-27.acacia',
     });
   }
 
-  async createPaymentIntent(amount: number, currency: string = 'usd', metadata: any = {}) {
+  async createPaymentIntent(amount: number, currency: string = 'inr', metadata: any = {}) {
     try {
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Convert to cents
@@ -46,7 +50,7 @@ export class PaymentsService {
       userId,
       estimateId,
       amount,
-      currency: 'usd',
+      currency: 'inr',
       stripePaymentIntentId,
       status: 'pending',
       metadata,
@@ -57,10 +61,13 @@ export class PaymentsService {
 
   async handleWebhook(signature: string, payload: Buffer) {
     try {
+      // Use a fallback value for Stripe webhook secret if not provided in environment variables
+      const webhookSecret = this.configService.get('STRIPE_WEBHOOK_SECRET') || 'whsec_your_stripe_webhook_secret';
+      
       const event = this.stripe.webhooks.constructEvent(
         payload,
         signature,
-        this.configService.get('STRIPE_WEBHOOK_SECRET'),
+        webhookSecret
       );
 
       switch (event.type) {

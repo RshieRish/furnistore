@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # FurniStore - AI-Powered Furniture Store
 
 A modern web application that provides AI-powered furniture appraisals and estimates using computer vision technology. The platform includes secure payment processing and comprehensive admin analytics.
@@ -15,6 +16,11 @@ A modern web application that provides AI-powered furniture appraisals and estim
 ### Home Page
 ![Home Page](./docs/images/home-page.png)
 *Modern and responsive home page showcasing featured products*
+=======
+# Cornwallis Exchange Backend
+
+This is the backend service for the Cornwallis Exchange application, a modern web application that provides AI-powered furniture appraisals and estimates using computer vision technology. The platform includes secure payment processing and comprehensive admin analytics.
+>>>>>>> rareandFind/main
 
 ## 🌟 Features
 
@@ -23,12 +29,17 @@ A modern web application that provides AI-powered furniture appraisals and estim
 * 💳 Secure payment processing
 * 📊 Admin dashboard with analytics
 * 🔒 JWT authentication
+<<<<<<< HEAD
 * 📱 Responsive design
 * ⚡ Real-time updates
+=======
+* ⚡ Real-time updates with WebSockets
+>>>>>>> rareandFind/main
 * 📈 Analytics and reporting
 
 ## 🏗️ Architecture
 
+<<<<<<< HEAD
 The project is split into two main components:
 
 ### Frontend (Next.js)
@@ -40,10 +51,20 @@ The project is split into two main components:
 
 ### Backend (NestJS)
 * Robust API with NestJS
+=======
+The backend is built with:
+
+* NestJS framework
+>>>>>>> rareandFind/main
 * MongoDB database
 * Groq Vision API integration
 * WebSocket support
 * JWT authentication
+<<<<<<< HEAD
+=======
+* Stripe payment integration
+* AWS S3 for image storage
+>>>>>>> rareandFind/main
 
 ## 🚀 Getting Started
 
@@ -56,6 +77,7 @@ The project is split into two main components:
 
 1. Clone the repository:
 ```bash
+<<<<<<< HEAD
 git clone https://github.com/RshieRish/furnistore.git
 cd furnistore
 ```
@@ -103,6 +125,36 @@ npm run dev
 * Passport.js
 * Socket.IO
 * Groq Vision API
+=======
+git clone https://github.com/RareandFind/Backend.git
+cd Backend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+```
+Edit the `.env` file with your configuration.
+
+4. Initialize the database:
+```bash
+npm run init-db
+```
+
+5. Start the development server:
+```bash
+npm run start:dev
+```
+
+## 🔧 API Endpoints
+
+The API documentation is available at `/api` when the server is running.
+>>>>>>> rareandFind/main
 
 ## 🛡️ Security Features
 * JWT authentication
@@ -112,6 +164,7 @@ npm run dev
 * Rate limiting
 * CORS protection
 
+<<<<<<< HEAD
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -120,6 +173,8 @@ npm run dev
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+=======
+>>>>>>> rareandFind/main
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 

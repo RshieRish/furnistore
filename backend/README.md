@@ -1,18 +1,21 @@
-# Cornwallis Exchange - Backend
+# Cornwallis Exchange Backend
 
-A robust NestJS backend service for the Cornwallis Exchange furniture appraisal platform. This service provides AI-powered furniture appraisal, user authentication, and real-time communication capabilities.
+A robust NestJS backend service for the Cornwallis Exchange application, a modern web application that provides AI-powered furniture appraisals and estimates using computer vision technology. The platform includes secure payment processing and comprehensive admin analytics.
 
-## Features
+## 🌟 Features
 
-- 🤖 AI Vision-powered furniture appraisal
-- 🔐 JWT-based authentication
-- 📊 MongoDB database integration
-- 🔄 Real-time WebSocket updates
-- 📁 File upload handling
-- 🔑 Role-based access control
-- 📝 Detailed logging system
+* 🤖 AI-powered furniture appraisal
+* 💰 Real-time price estimates
+* 💳 Secure payment processing
+* 📊 Admin dashboard with analytics
+* 🔒 JWT authentication
+* ⚡ Real-time updates with WebSockets
+* 📈 Analytics and reporting
+* 📁 File upload handling
+* 🔑 Role-based access control
+* 📝 Detailed logging system
 
-## Technology Stack
+## 🏗️ Technology Stack
 
 - **Framework**: NestJS
 - **Language**: TypeScript
@@ -23,6 +26,8 @@ A robust NestJS backend service for the Cornwallis Exchange furniture appraisal 
 - **AI Integration**: Groq API
 - **API Documentation**: Swagger/OpenAPI
 - **Testing**: Jest
+- **Payment Processing**: Stripe
+- **Storage**: AWS S3
 
 ## Prerequisites
 
@@ -33,11 +38,11 @@ A robust NestJS backend service for the Cornwallis Exchange furniture appraisal 
 
 ## Environment Setup
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (or copy from .env.example):
 
 ```env
 # Application
-PORT=4000
+PORT=3001
 NODE_ENV=development
 
 # MongoDB
@@ -54,16 +59,23 @@ GROQ_API_KEY=your-groq-api-key
 UPLOAD_DIR=uploads
 MAX_FILE_SIZE=5242880  # 5MB in bytes
 
-# WebSocket
-WS_PORT=4000
+# Stripe
+STRIPE_SECRET_KEY=your-stripe-secret-key
+STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
+
+# AWS S3
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+AWS_REGION=your-aws-region
+AWS_BUCKET_NAME=your-bucket-name
 ```
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd backend
+git clone https://github.com/RareandFind/Backend.git
+cd Backend
 ```
 
 2. Install dependencies:
@@ -73,19 +85,23 @@ npm install
 yarn install
 ```
 
-3. Start MongoDB:
+3. Set up environment variables:
 ```bash
-mongod
+cp .env.example .env
+```
+Edit the `.env` file with your configuration.
+
+4. Initialize the database:
+```bash
+npm run init-db
 ```
 
-4. Start the development server:
+5. Start the development server:
 ```bash
 npm run start:dev
-# or
-yarn start:dev
 ```
 
-The server will be available at `http://localhost:4000`.
+The server will be available at `http://localhost:3001`.
 
 ## Project Structure
 
@@ -106,7 +122,7 @@ backend/
 
 ## API Documentation
 
-The API documentation is available at `http://localhost:4000/api` when running in development mode. It includes:
+The API documentation is available at `/api` when the server is running. It includes:
 
 - Authentication endpoints
 - Estimate creation and management
@@ -165,75 +181,21 @@ docker build -t cornwallis-backend .
 
 2. Run the container:
 ```bash
-docker run -p 4000:4000 \
+docker run -p 3001:3001 \
   -e MONGODB_URI=your-mongodb-uri \
   -e JWT_SECRET=your-jwt-secret \
   -e GROQ_API_KEY=your-groq-api-key \
   cornwallis-backend
 ```
 
-### Manual Deployment
+## 🛡️ Security Features
+* JWT authentication
+* HTTP-only cookies
+* Role-based access control
+* Input validation
+* Rate limiting
+* CORS protection
 
-1. Build the application:
-```bash
-npm run build
-```
-
-2. Set up environment variables
-
-3. Start the server:
-```bash
-npm run start:prod
-```
-
-## Testing
-
-### Unit Tests
-```bash
-npm run test
-```
-
-### E2E Tests
-```bash
-npm run test:e2e
-```
-
-### Test Coverage
-```bash
-npm run test:cov
-```
-
-## API Rate Limiting
-
-- Authentication: 5 requests per minute
-- Estimates: 10 requests per hour
-- File uploads: 50 requests per day
-
-## Error Handling
-
-The application implements a global error handling system with:
-- Detailed error messages
-- Error logging
-- Appropriate HTTP status codes
-- Rate limit notifications
-
-## Security Measures
-
-- CORS configuration
-- Helmet security headers
-- Rate limiting
-- Input validation
-- File upload restrictions
-- JWT token validation
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 

@@ -4,7 +4,6 @@ import { Model } from 'mongoose';
 import { Estimate } from './schemas/estimate.schema';
 import { User } from '../users/schemas/user.schema';
 import { ConfigService } from '@nestjs/config';
-import fetch from 'node-fetch';
 import * as fs from 'fs';
 import * as path from 'path';
 import { EstimatesGateway } from './estimates.gateway';
@@ -140,6 +139,7 @@ Customer Requirements: ${requirements}`;
       const base64Image = imageBuffer.toString('base64');
 
       console.log('Sending request to Groq API...');
+      const { default: fetch } = await import('node-fetch');
       const response = await fetch(this.groqApiUrl, {
         method: 'POST',
         headers: {

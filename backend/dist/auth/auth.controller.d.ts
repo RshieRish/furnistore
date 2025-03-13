@@ -1,9 +1,11 @@
+import { Response } from 'express';
 import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    register(createUserDto: CreateUserDto): Promise<{
+    register(createUserDto: CreateUserDto, response: Response): Promise<{
         access_token: string;
         user: {
             email: string;
@@ -13,7 +15,7 @@ export declare class AuthController {
             _id: any;
         };
     }>;
-    login(req: any): Promise<{
+    login(loginDto: LoginDto, response: Response): Promise<{
         access_token: string;
         user: {
             email: string;

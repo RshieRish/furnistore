@@ -12,12 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EstimateSchema = exports.Estimate = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
+const user_schema_1 = require("../../users/schemas/user.schema");
 let Estimate = class Estimate extends mongoose_2.Document {
 };
 exports.Estimate = Estimate;
 __decorate([
-    (0, mongoose_1.Prop)({ required: true }),
-    __metadata("design:type", String)
+    (0, mongoose_1.Prop)({ type: mongoose_2.Schema.Types.ObjectId, ref: 'User', required: true }),
+    __metadata("design:type", user_schema_1.User)
 ], Estimate.prototype, "userId", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ required: true }),

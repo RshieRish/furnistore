@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,8 @@ import { login } from "@/lib/api"
 import { useAuth } from "@/store/auth"
 import { API_URL } from "@/config"
 
-export default function LoginPage() {
+// Component that uses useSearchParams
+function LoginContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -37,10 +38,11 @@ export default function LoginPage() {
       
       if (user.role === 'admin' && user.isAdmin) {
         console.log('Admin user detected, redirecting to:', from || '/admin/dashboard');
-        router.replace(from || '/admin/dashboard');
+        // Use push instead of replace for more reliable navigation
+        router.push(from || '/admin/dashboard');
       } else {
         console.log('Regular user detected, redirecting to account');
-        router.replace('/account');
+        router.push('/account');
       }
     }
   }, [user, isHydrated, router, isRedirecting, searchParams]);
@@ -67,7 +69,15 @@ export default function LoginPage() {
       setToken(response.access_token);
       setUser(response.user);
 
-      // Let the useEffect handle redirection
+      // Manual redirect for admin users to ensure it works
+      if (response.user.role === 'admin' && response.user.isAdmin) {
+        console.log('Admin login detected, redirecting to dashboard');
+        // Use window.location for a full page reload to ensure clean state
+        window.location.href = '/admin/dashboard';
+        return;
+      }
+
+      // Let the useEffect handle redirection for non-admin users
       setIsRedirecting(true);
 
     } catch (error: any) {
@@ -143,6 +153,27 @@ export default function LoginPage() {
         </p>
       </form>
     </div>
+  )
+}
+
+// Loading fallback
+function LoginLoading() {
+  return (
+    <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h2 className="text-xl mb-4">Loading...</h2>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+      </div>
+    </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
   )
 }
 

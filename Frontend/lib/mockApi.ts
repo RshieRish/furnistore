@@ -1,11 +1,108 @@
 // Mock product data
 const mockProducts = [
-  { id: 1, name: "Modern Sofa", price: 999, image: "/placeholder.svg", category: "living-room" },
-  { id: 2, name: "Elegant Dining Table", price: 599, image: "/placeholder.svg", category: "dining-room" },
-  { id: 3, name: "Cozy Armchair", price: 399, image: "/placeholder.svg", category: "living-room" },
-  { id: 4, name: "Office Desk", price: 299, image: "/placeholder.svg", category: "office" },
-  { id: 5, name: "Queen Size Bed", price: 799, image: "/placeholder.svg", category: "bedroom" },
+  { 
+    _id: "1", 
+    name: "Antique Marble Top Table", 
+    price: 600, 
+    images: ["/images/marble-top-table.jpg"], 
+    category: "Living Room",
+    description: "MARBLE TOP TABLE\tMAHOGANY WOOD\tBORER & TERMITE TREATED\tFINELY HANDCRAFTED",
+    material: "Marble, Mahogany",
+    style: "Traditional",
+    color: "Brown, White",
+    stockQuantity: 5,
+    features: ["Marble Top", "Mahogany Wood", "Borer & Termite Treated", "Finely Handcrafted"],
+    rating: 4.8,
+    reviews: 12,
+    isOnSale: false,
+    isFeatured: true
+  },
 ]
+
+// Generate more mock products
+for (let i = 2; i <= 100; i++) {
+  const categories = [
+    'Living Room',
+    'Bedroom',
+    'Dining Room',
+    'Office',
+    'Outdoor',
+    'Kitchen',
+    'Bathroom',
+    'Kids',
+    'Entryway',
+    'Storage'
+  ]
+  
+  const materials = [
+    'Wood',
+    'Leather',
+    'Fabric',
+    'Metal',
+    'Glass',
+    'Marble',
+    'Plastic',
+    'Rattan',
+    'Bamboo',
+    'Velvet'
+  ]
+  
+  const styles = [
+    'Modern',
+    'Traditional',
+    'Contemporary',
+    'Rustic',
+    'Industrial',
+    'Scandinavian',
+    'Mid-Century',
+    'Bohemian',
+    'Farmhouse',
+    'Minimalist'
+  ]
+  
+  const colors = [
+    'Black',
+    'White',
+    'Brown',
+    'Gray',
+    'Beige',
+    'Blue',
+    'Green',
+    'Red',
+    'Yellow',
+    'Purple'
+  ]
+  
+  const category = categories[Math.floor(Math.random() * categories.length)]
+  const material = materials[Math.floor(Math.random() * materials.length)]
+  const style = styles[Math.floor(Math.random() * styles.length)]
+  const color = colors[Math.floor(Math.random() * colors.length)]
+  const price = Math.floor(Math.random() * 1500) + 100
+  
+  mockProducts.push({
+    _id: i.toString(),
+    name: `${style} ${material} ${category} Piece`,
+    price: price,
+    images: [`/images/furniture-${i-1}.jpg`],
+    category: category,
+    description: `Beautiful ${style.toLowerCase()} ${category.toLowerCase()} piece made of high-quality ${material.toLowerCase()} in a stunning ${color.toLowerCase()} finish.`,
+    material: material,
+    style: style,
+    color: color,
+    stockQuantity: Math.floor(Math.random() * 20) + 1,
+    features: [
+      `Made of premium ${material}`,
+      `${style} design`,
+      `${color} finish`,
+      'Easy assembly',
+      'Durable construction'
+    ],
+    rating: parseFloat((Math.random() * 2 + 3).toFixed(1)),
+    reviews: Math.floor(Math.random() * 50),
+    isOnSale: Math.random() > 0.7,
+    isFeatured: Math.random() > 0.8
+  })
+}
 
 export const mockGetProducts = (category?: string) => {
   return new Promise((resolve) => {
@@ -19,10 +116,10 @@ export const mockGetProducts = (category?: string) => {
   })
 }
 
-export const mockGetProduct = (id: number) => {
+export const mockGetProduct = (id: string) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      const product = mockProducts.find((p) => p.id === id)
+      const product = mockProducts.find((p) => p._id === id)
       if (product) {
         resolve(product)
       } else {

@@ -1,0 +1,20 @@
+# Git
+.git
+
+# Node.js
+node_modules
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# OS specific
+.DS_Store
+
+# Keep uploads directory but not its contents
+uploads/*
+!uploads/.gitkeep 

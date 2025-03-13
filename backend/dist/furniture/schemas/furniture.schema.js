@@ -39,6 +39,10 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Furniture.prototype, "imageUrl", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [String], default: [] }),
+    __metadata("design:type", Array)
+], Furniture.prototype, "imageUrls", void 0);
 exports.Furniture = Furniture = __decorate([
     (0, mongoose_1.Schema)()
 ], Furniture);

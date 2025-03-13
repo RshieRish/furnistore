@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster'
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import { API_URL } from '@/config'
+import { ThemeProvider } from "@/components/theme-provider"
 
 export default function RootLayoutClient({
   children,
@@ -40,11 +41,18 @@ export default function RootLayoutClient({
   }, [setUser, setToken])
 
   return (
-    <>
-      <Header />
-      <main className="min-h-screen">{children}</main>
-      <Footer />
-      <Toaster />
-    </>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="light"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow">{children}</main>
+        <Footer />
+        <Toaster />
+      </div>
+    </ThemeProvider>
   )
 } 

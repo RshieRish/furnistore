@@ -1,33 +1,40 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import ProductCard from "@/components/ProductCard"
 import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { getProducts } from "@/lib/api"
-import { Box } from "@/components/ui/box"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import ProductCard from "@/components/ProductCard"
 
 interface Product {
-  id: number
+  _id: string
   name: string
   price: number
-  image: string
+  images: string[]
   category: string
+  description: string
+  material: string
+  style: string
+  color: string
 }
 
 export default function ProductListingPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000])
   const [category, setCategory] = useState<string>("")
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchProducts()
-  }, [category])
+  }, [])
 
   const fetchProducts = async () => {
     try {
+      setIsLoading(true)
       const fetchedProducts = await getProducts(category)
       setProducts(fetchedProducts)
       setFilteredProducts(fetchedProducts)
@@ -35,6 +42,8 @@ export default function ProductListingPage() {
     } catch (error) {
       console.error("Failed to fetch products:", error)
       setError("Failed to load products. Please try again later.")
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -42,31 +51,68 @@ export default function ProductListingPage() {
     const filtered = products.filter((product) => {
       const matchesCategory = category === "" || product.category === category
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1]
-      return matchesCategory && matchesPrice
+      const matchesSearch = searchQuery === "" || 
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.material.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.style.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.color.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      return matchesCategory && matchesPrice && matchesSearch
     })
     setFilteredProducts(filtered)
-  }, [products, category, priceRange])
+  }, [products, category, priceRange, searchQuery])
+
+  const handleCategoryChange = (value: string) => {
+    setCategory(value === "all" ? "" : value)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">All Products</h1>
+        <p className="text-center py-8">Loading products...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">All Products</h1>
       {error && (
-        <Box p={4} bg="red.100" color="red.900" borderRadius="md" mb={4}>
-          {error}
-        </Box>
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
+      
+      <div className="mb-8">
+        <Input
+          type="text"
+          placeholder="Search products..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="mb-4"
+        />
+      </div>
+      
       <div className="flex flex-wrap mb-8">
         <div className="w-full md:w-1/4 mb-4 md:mb-0 pr-4">
-          <Select value={category} onValueChange={(value) => setCategory(value)}>
+          <Select value={category} onValueChange={handleCategoryChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="living-room">Living Room</SelectItem>
-              <SelectItem value="bedroom">Bedroom</SelectItem>
-              <SelectItem value="dining-room">Dining Room</SelectItem>
-              <SelectItem value="office">Office</SelectItem>
+              <SelectItem value="Living Room">Living Room</SelectItem>
+              <SelectItem value="Bedroom">Bedroom</SelectItem>
+              <SelectItem value="Dining Room">Dining Room</SelectItem>
+              <SelectItem value="Office">Office</SelectItem>
+              <SelectItem value="Outdoor">Outdoor</SelectItem>
+              <SelectItem value="Kitchen">Kitchen</SelectItem>
+              <SelectItem value="Bathroom">Bathroom</SelectItem>
+              <SelectItem value="Kids">Kids</SelectItem>
+              <SelectItem value="Entryway">Entryway</SelectItem>
+              <SelectItem value="Storage">Storage</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -87,10 +133,15 @@ export default function ProductListingPage() {
           />
         </div>
       </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-        {filteredProducts.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product) => (
+            <ProductCard key={product._id} product={product} />
+          ))
+        ) : (
+          <p className="col-span-full text-center py-8">No products found matching your criteria.</p>
+        )}
       </div>
     </div>
   )

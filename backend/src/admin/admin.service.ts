@@ -17,12 +17,23 @@ export class AdminService {
     return this.furnitureModel.find().exec();
   }
 
+  async getPublicFurniture(category?: string) {
+    if (category) {
+      return this.furnitureModel.find({ 
+        category: { $regex: new RegExp(category, 'i') },
+        status: 'available'
+      }).exec();
+    }
+    return this.furnitureModel.find({ status: 'available' }).exec();
+  }
+
   async createFurniture(furnitureData: {
     name: string;
     price: number;
     category: string;
     description?: string;
     imageUrl?: string;
+    imageUrls?: string[];
   }) {
     const newFurniture = new this.furnitureModel(furnitureData);
     return newFurniture.save();
@@ -35,6 +46,7 @@ export class AdminService {
     status?: string;
     description?: string;
     imageUrl?: string;
+    imageUrls?: string[];
   }) {
     const furniture = await this.furnitureModel.findByIdAndUpdate(
       id,
@@ -73,18 +85,18 @@ export class AdminService {
     return this.orderModel.find(query).exec();
   }
 
-  async updateEstimate(id: string, status: string) {
+  async updateEstimate(id: string, updateData: { status: string }) {
     return this.estimateModel.findByIdAndUpdate(
       id,
-      { status },
+      { status: updateData.status },
       { new: true }
     ).exec();
   }
 
-  async updateOrder(id: string, status: string) {
+  async updateOrder(id: string, updateData: { status: string }) {
     return this.orderModel.findByIdAndUpdate(
       id,
-      { status },
+      { status: updateData.status },
       { new: true }
     ).exec();
   }

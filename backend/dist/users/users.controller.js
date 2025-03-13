@@ -31,14 +31,26 @@ let UsersController = class UsersController {
     findAll() {
         return this.usersService.findAll();
     }
-    findOne(id) {
-        return this.usersService.findById(id);
+    async findOne(id) {
+        const user = await this.usersService.findById(id);
+        if (!user) {
+            throw new common_1.NotFoundException(`User with ID ${id} not found`);
+        }
+        return user;
     }
-    update(id, updateUserDto) {
-        return this.usersService.update(id, updateUserDto);
+    async update(id, updateUserDto) {
+        const user = await this.usersService.update(id, updateUserDto);
+        if (!user) {
+            throw new common_1.NotFoundException(`User with ID ${id} not found`);
+        }
+        return user;
     }
-    remove(id) {
-        return this.usersService.remove(id);
+    async remove(id) {
+        const user = await this.usersService.remove(id);
+        if (!user) {
+            throw new common_1.NotFoundException(`User with ID ${id} not found`);
+        }
+        return user;
     }
 };
 exports.UsersController = UsersController;
@@ -68,7 +80,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
@@ -78,7 +90,7 @@ __decorate([
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
@@ -88,7 +100,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], UsersController.prototype, "remove", null);
 exports.UsersController = UsersController = __decorate([
     (0, swagger_1.ApiTags)('users'),
