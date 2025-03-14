@@ -1,19 +1,25 @@
 {
-  "name": "cornwallis-exchange-backend",
+  "name": "cornwallis-backend",
   "version": "1.0.0",
-  "description": "Backend API for Cornwallis Exchange",
+  "description": "Backend for Cornwallis Exchange",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
-  },
-  "dependencies": {
-    "http": "^0.0.1-security"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.22"
+    "start": "node server.js"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@nestjs/common": "^11.0.11",
+    "@nestjs/config": "^4.0.1",
+    "@nestjs/platform-express": "^11.0.11",
+    "axios": "^1.8.3",
+    "mongodb": "^5.7.0"
+  },
+  "devDependencies": {
+    "@types/aws-sdk": "^0.0.42",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12"
   }
 }
