@@ -9,14 +9,8 @@ export declare class EstimatesService {
     private readonly estimatesGateway;
     private readonly groqApiUrl;
     constructor(estimateModel: Model<Estimate>, configService: ConfigService, estimatesGateway: EstimatesGateway);
-    createEstimate(image: Express.Multer.File, requirements: string, user: User): Promise<import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
+    createEstimate(image: Express.Multer.File, requirements: string, user: User): unknown;
     private getPriceEstimateFromGroq;
-    getUserEstimates(userId: string): Promise<(import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
-        _id: import("mongoose").Types.ObjectId;
-    })[]>;
-    updateEstimateStatus(id: string, status: string): Promise<import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
+    getUserEstimates(userId: string): unknown;
+    updateEstimateStatus(id: string, status: string): unknown;
 }

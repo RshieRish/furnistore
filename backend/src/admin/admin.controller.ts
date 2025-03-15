@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Query, UseInterceptors, UploadedFiles, BadRequestException, Res, HttpStatus } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
@@ -7,6 +7,10 @@ import { extname } from 'path';
 import { memoryStorage } from 'multer';
 import { S3Service } from '../shared/s3.service';
 import { Public } from '../auth/decorators/public.decorator';
+import axios from 'axios';
+import { Response } from 'express';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
+import { ConfigService } from '@nestjs/config';
 
 interface UpdateFurnitureDto {
   name?: string;
@@ -24,11 +28,17 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly s3Service: S3Service,
+    private readonly configService: ConfigService,
   ) {}
 
   @Get('furniture')
   async getFurniture() {
     return this.adminService.getAllFurniture();
+  }
+
+  @Get('furniture/:id')
+  async getFurnitureById(@Param('id') id: string) {
+    return this.adminService.getFurnitureById(id);
   }
 
   @Public()
@@ -197,5 +207,89 @@ export class AdminController {
     @Body() updateData: { status: string }
   ) {
     return this.adminService.updateOrder(id, updateData);
+  }
+
+  @Public()
+  @Get('proxy-image')
+  async proxyImage(
+    @Query('url') url: string,
+    @Res() res: Response
+  ) {
+    try {
+      if (!url) {
+        return res.status(HttpStatus.BAD_REQUEST).json({ message: 'URL parameter is required' });
+      }
+
+      console.log('Proxy image request for URL:', url);
+
+      // Check if this is an S3 URL
+      if (url.includes('s3.us-east') || url.includes('amazonaws.com')) {
+        // Extract bucket name and key from the S3 URL
+        const urlObj = new URL(url);
+        const hostParts = urlObj.hostname.split('.');
+        const bucketName = hostParts[0];
+        const key = urlObj.pathname.substring(1); // Remove leading slash
+        
+        console.log(`Detected S3 URL. Bucket: ${bucketName}, Key: ${key}`);
+        
+        try {
+          // Create a GetObjectCommand to fetch the image directly from S3
+          const command = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: key,
+          });
+          
+          // Get the S3 client from the S3Service
+          const s3Client = (this.s3Service as any).s3Client;
+          
+          console.log('Sending S3 GetObjectCommand...');
+          
+          // Send the command to get the object
+          const response = await s3Client.send(command);
+          
+          // Set appropriate headers
+          res.set({
+            'Content-Type': response.ContentType,
+            'Content-Length': response.ContentLength,
+            'Cache-Control': 'max-age=31536000', // Cache for 1 year
+          });
+          
+          console.log('S3 object retrieved successfully, streaming to client');
+          
+          // Stream the response body to the client
+          response.Body.pipe(res);
+          return; // Important: return here to prevent further execution
+        } catch (error) {
+          console.error('Error fetching from S3:', error);
+          return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 
+            message: 'Error fetching image from S3',
+            error: error.message 
+          });
+        }
+      } else {
+        // For non-S3 URLs, proxy the request through axios
+        console.log('Non-S3 URL, proxying through axios:', url);
+        
+        const response = await axios.get(url, { responseType: 'stream' });
+        
+        // Set appropriate headers
+        res.set({
+          'Content-Type': response.headers['content-type'],
+          'Content-Length': response.headers['content-length'],
+          'Cache-Control': 'max-age=31536000', // Cache for 1 year
+        });
+        
+        console.log('External image retrieved successfully, streaming to client');
+        
+        // Stream the response to the client
+        response.data.pipe(res);
+      }
+    } catch (error) {
+      console.error('Error proxying image:', error);
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 
+        message: 'Error proxying image',
+        error: error.message 
+      });
+    }
   }
 } 

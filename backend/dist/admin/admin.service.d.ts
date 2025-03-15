@@ -7,12 +7,8 @@ export declare class AdminService {
     private estimateModel;
     private orderModel;
     constructor(furnitureModel: Model<Furniture>, estimateModel: Model<Estimate>, orderModel: Model<Order>);
-    getAllFurniture(): Promise<(import("mongoose").Document<unknown, {}, Furniture> & Furniture & {
-        _id: import("mongoose").Types.ObjectId;
-    })[]>;
-    getPublicFurniture(category?: string): Promise<(import("mongoose").Document<unknown, {}, Furniture> & Furniture & {
-        _id: import("mongoose").Types.ObjectId;
-    })[]>;
+    getAllFurniture(): unknown;
+    getPublicFurniture(category?: string): unknown;
     createFurniture(furnitureData: {
         name: string;
         price: number;
@@ -20,9 +16,7 @@ export declare class AdminService {
         description?: string;
         imageUrl?: string;
         imageUrls?: string[];
-    }): Promise<import("mongoose").Document<unknown, {}, Furniture> & Furniture & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
+    }): unknown;
     updateFurniture(id: string, updateData: {
         name?: string;
         price?: number;
@@ -31,26 +25,14 @@ export declare class AdminService {
         description?: string;
         imageUrl?: string;
         imageUrls?: string[];
-    }): Promise<import("mongoose").Document<unknown, {}, Furniture> & Furniture & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
-    deleteFurniture(id: string): Promise<{
-        message: string;
-    }>;
-    getAllEstimates(): Promise<Omit<import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
-        _id: import("mongoose").Types.ObjectId;
-    }, never>[]>;
-    getAllOrders(userId?: string): Promise<(import("mongoose").Document<unknown, {}, Order> & Order & {
-        _id: import("mongoose").Types.ObjectId;
-    })[]>;
+    }): unknown;
+    deleteFurniture(id: string): unknown;
+    getAllEstimates(): unknown;
+    getAllOrders(userId?: string): unknown;
     updateEstimate(id: string, updateData: {
         status: string;
-    }): Promise<import("mongoose").Document<unknown, {}, Estimate> & Estimate & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
+    }): unknown;
     updateOrder(id: string, updateData: {
         status: string;
-    }): Promise<import("mongoose").Document<unknown, {}, Order> & Order & {
-        _id: import("mongoose").Types.ObjectId;
-    }>;
+    }): unknown;
 }

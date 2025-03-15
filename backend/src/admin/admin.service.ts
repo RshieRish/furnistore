@@ -17,6 +17,14 @@ export class AdminService {
     return this.furnitureModel.find().exec();
   }
 
+  async getFurnitureById(id: string) {
+    const furniture = await this.furnitureModel.findById(id).exec();
+    if (!furniture) {
+      throw new NotFoundException('Furniture not found');
+    }
+    return furniture;
+  }
+
   async getPublicFurniture(category?: string) {
     if (category) {
       return this.furnitureModel.find({ 

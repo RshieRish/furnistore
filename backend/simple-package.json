@@ -1,0 +1,14 @@
+{
+  "name": "cornwallis-backend-minimal",
+  "version": "1.0.0",
+  "description": "Minimal backend for Cornwallis Exchange",
+  "main": "bare-minimum.js",
+  "scripts": {
+    "start": "node bare-minimum.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+} 

@@ -1,6 +1,11 @@
-import { API_URL } from '@/config'
-import { mockGetProducts, mockGetProduct, mockEstimateFurniture, mockEstimateRepair } from "./mockApi"
+// import { API_URL, ACTUAL_API_URL } from '@/config'
+import { ACTUAL_API_URL as API_URL } from '@/config'
 import { useAuth } from '@/store/auth'
+
+// Helper function to check if an image is from S3
+const isS3Image = (url: string): boolean => {
+  return Boolean(url && (url.includes('amazonaws.com') || url.includes('s3.')));
+}
 
 // Helper function to get cookie value
 function getCookie(name: string) {
@@ -16,134 +21,194 @@ const getAuthHeaders = () => {
   console.log('Getting auth headers with token:', token ? `${token.substring(0, 10)}...` : 'none')
   return {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    'Authorization': token ? `Bearer ${token}` : ''
   }
 }
 
 export async function getProducts(category?: string) {
   console.log("Fetching products with category:", category);
+  console.log("Using API URL:", API_URL);
+  
   try {
-    // Fetch products from the public furniture endpoint
-    const furnitureResponse = await fetch(`${API_URL}/admin/public/furniture${category ? `?category=${category}` : ""}`)
-    if (!furnitureResponse.ok) {
-      console.error(`HTTP error fetching furniture! status: ${furnitureResponse.status}`)
-      // Fallback to products endpoint if public furniture fails
-      const productsResponse = await fetch(`${API_URL}/products${category ? `?category=${category}` : ""}`)
-      if (!productsResponse.ok) {
-        console.error(`HTTP error fetching products! status: ${productsResponse.status}`)
-        // If we can't get products, try mock data
-        if (process.env.NODE_ENV === "development") {
-          console.log("Falling back to mock data for products")
-          return mockGetProducts(category) as Promise<any[]>
+    // Check if user is admin
+    const token = getCookie('token');
+    const isAdmin = token === 'dummy-jwt-token-for-admin';
+    console.log("Is admin user:", isAdmin);
+    
+    let furniture = [];
+    let apiError = null;
+    
+    // Try the public furniture endpoint
+    try {
+      console.log(`Fetching from public furniture endpoint: ${API_URL}/public/furniture${category ? `?category=${category}` : ""}`);
+      const furnitureResponse = await fetch(`${API_URL}/public/furniture${category ? `?category=${category}` : ""}`)
+      
+      if (furnitureResponse.ok) {
+        furniture = await furnitureResponse.json();
+        console.log("Fetched furniture from public endpoint:", furniture);
+        
+        // If we got an empty array but no error, log it
+        if (Array.isArray(furniture) && furniture.length === 0) {
+          console.log("Public furniture endpoint returned empty array");
         }
-        return [] // Return empty array if no mock data
+      } else {
+        console.error(`HTTP error fetching from public furniture! status: ${furnitureResponse.status}`);
+        apiError = `Public furniture endpoint returned ${furnitureResponse.status}`;
+        
+        // Try to get the error message from the response
+        try {
+          const errorText = await furnitureResponse.text();
+          console.error("Error response text:", errorText);
+        } catch (e) {
+          console.error("Could not read error response text");
+        }
+        
+        // If user is admin, try the admin endpoint
+        if (isAdmin) {
+          console.log("Trying admin furniture endpoint as admin user");
+          const adminResponse = await fetch(`${API_URL}/admin/furniture`, {
+            headers: getAuthHeaders()
+          });
+          
+          if (adminResponse.ok) {
+            furniture = await adminResponse.json();
+            console.log("Fetched furniture from admin endpoint:", furniture);
+            
+            // If we got an empty array but no error, log it
+            if (Array.isArray(furniture) && furniture.length === 0) {
+              console.log("Admin furniture endpoint returned empty array");
+            }
+          } else {
+            console.error(`HTTP error fetching from admin furniture! status: ${adminResponse.status}`);
+            apiError = `${apiError}; Admin furniture endpoint returned ${adminResponse.status}`;
+            
+            // Try to get the error message from the response
+            try {
+              const errorText = await adminResponse.text();
+              console.error("Error response text:", errorText);
+            } catch (e) {
+              console.error("Could not read error response text");
+            }
+          }
+        }
       }
-      return productsResponse.json()
+    } catch (error: any) {
+      console.error("Error fetching furniture:", error);
+      apiError = `Exception fetching furniture: ${error.message}`;
     }
     
-    const furniture = await furnitureResponse.json()
-    console.log("Fetched furniture:", furniture)
+    // If we have furniture data, filter and return it
+    if (furniture && Array.isArray(furniture) && furniture.length > 0) {
+      // Filter by category if needed
+      const filteredFurniture = category 
+        ? furniture.filter((item: any) => 
+            item.category?.toLowerCase().includes(category.toLowerCase()) ||
+            (item.category?.toLowerCase().includes('sofa') && category.toLowerCase() === 'living room') ||
+            (item.category?.toLowerCase().includes('bed') && category.toLowerCase() === 'bedroom') ||
+            (item.category?.toLowerCase().includes('table') && category.toLowerCase() === 'dining room')
+          )
+        : furniture;
+      
+      console.log("Filtered furniture:", filteredFurniture);
+      return filteredFurniture;
+    }
     
-    // Transform furniture items to match product structure
-    const furnitureAsProducts = furniture.map((item: any) => ({
-      _id: item._id,
-      name: item.name,
-      price: item.price,
-      description: item.description || `Beautiful ${item.category} furniture piece`,
-      images: item.imageUrls && item.imageUrls.length > 0 ? item.imageUrls : 
-              item.imageUrl ? [item.imageUrl] : ['/placeholder.svg'],
-      category: item.category || 'Furniture',
-      material: 'Various',
-      style: 'Modern',
-      color: 'Various',
-      stockQuantity: 1,
-      isFeatured: true
-    }))
+    // If we couldn't get furniture data, return empty array
+    console.error("Could not fetch furniture data:", apiError);
+    return [];
     
-    // Filter by category if needed
-    const filteredFurniture = category 
-      ? furnitureAsProducts.filter((item: any) => 
-          item.category.toLowerCase().includes(category.toLowerCase()) ||
-          (item.category.toLowerCase().includes('sofa') && category.toLowerCase() === 'living room') ||
-          (item.category.toLowerCase().includes('bed') && category.toLowerCase() === 'bedroom') ||
-          (item.category.toLowerCase().includes('table') && category.toLowerCase() === 'dining room')
-        )
-      : furnitureAsProducts;
-    
-    console.log("Filtered furniture:", filteredFurniture);
-    return filteredFurniture;
   } catch (error) {
-    console.error("There was a problem fetching the products:", error)
-    // Fallback to mock data if API call fails
-    if (process.env.NODE_ENV === "development") {
-      console.log("Falling back to mock data")
-      return mockGetProducts(category) as Promise<any[]>
-    }
-    return [] // Return an empty array instead of throwing
+    console.error("There was a problem fetching products:", error);
+    // Return empty array
+    return [];
   }
 }
 
 export async function getProduct(id: string) {
+  console.log(`getProduct called with id: ${id}`);
+  console.log(`API URL: ${API_URL}`);
+  
+  let apiError = null;
+  
   try {
     // Try to fetch from public furniture first
     try {
-      const furnitureResponse = await fetch(`${API_URL}/admin/public/furniture`);
+      console.log(`Fetching from public furniture endpoint: ${API_URL}/public/furniture`);
+      const furnitureResponse = await fetch(`${API_URL}/public/furniture`);
+      
       if (furnitureResponse.ok) {
         const furniture = await furnitureResponse.json();
-        const furnitureItem = furniture.find((item: any) => item._id === id);
+        console.log(`Found ${furniture.length} furniture items`);
+        
+        const furnitureItem = furniture.find((item: any) => item._id === id || item.id === id);
         
         if (furnitureItem) {
           console.log("Found furniture item:", furnitureItem);
-          // Transform furniture item to match product structure
-          return {
-            _id: furnitureItem._id,
-            name: furnitureItem.name,
-            price: furnitureItem.price,
-            description: furnitureItem.description || `Beautiful ${furnitureItem.category} furniture piece`,
-            images: furnitureItem.imageUrls && furnitureItem.imageUrls.length > 0 ? furnitureItem.imageUrls : 
-                    furnitureItem.imageUrl ? [furnitureItem.imageUrl] : ['/placeholder.svg'],
-            category: furnitureItem.category,
-            material: 'Various',
-            style: 'Modern',
-            color: 'Various',
-            stockQuantity: 1,
-            features: ['Premium quality', 'Comfortable design', 'Durable materials'],
-            rating: 4.5,
-            reviews: 10,
-            isFeatured: true
-          };
+          return furnitureItem;
+        } else {
+          console.log(`Furniture item with id ${id} not found in the list of ${furniture.length} items`);
+        }
+      } else {
+        console.error(`Error fetching from public furniture: ${furnitureResponse.status} ${furnitureResponse.statusText}`);
+        apiError = `Public furniture endpoint returned ${furnitureResponse.status}`;
+        
+        // Try to get the error message from the response
+        try {
+          const errorText = await furnitureResponse.text();
+          console.error("Error response text:", errorText);
+        } catch (e) {
+          console.error("Could not read error response text");
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching from public furniture:", error);
+      apiError = `Exception fetching from public furniture: ${error.message}`;
     }
     
-    // If not found in furniture, try products
+    // If not found in public furniture, try admin furniture endpoint
     try {
-      const response = await fetch(`${API_URL}/products/${id}`);
-      if (response.ok) {
-        return response.json();
+      console.log(`Fetching from admin furniture endpoint: ${API_URL}/admin/furniture`);
+      const adminResponse = await fetch(`${API_URL}/admin/furniture`, {
+        headers: getAuthHeaders()
+      });
+      
+      if (adminResponse.ok) {
+        const adminFurniture = await adminResponse.json();
+        console.log(`Found ${adminFurniture.length} admin furniture items`);
+        
+        const adminFurnitureItem = adminFurniture.find((item: any) => item._id === id || item.id === id);
+        
+        if (adminFurnitureItem) {
+          console.log("Found admin furniture item:", adminFurnitureItem);
+          return adminFurnitureItem;
+        } else {
+          console.log(`Furniture item with id ${id} not found in admin furniture list`);
+        }
+      } else {
+        console.error(`Error fetching from admin furniture: ${adminResponse.status} ${adminResponse.statusText}`);
+        apiError = `${apiError}; Admin furniture endpoint returned ${adminResponse.status}`;
+        
+        // Try to get the error message from the response
+        try {
+          const errorText = await adminResponse.text();
+          console.error("Error response text:", errorText);
+        } catch (e) {
+          console.error("Could not read error response text");
+        }
       }
-    } catch (error) {
-      console.error("Error fetching from products:", error);
+    } catch (error: any) {
+      console.error("Error fetching from admin furniture:", error);
+      apiError = `${apiError}; Exception fetching from admin furniture: ${error.message}`;
     }
     
-    // If we get here, try mock data in development
-    if (process.env.NODE_ENV === "development") {
-      console.log("Falling back to mock data for product");
-      return mockGetProduct(id) as Promise<any>;
-    }
+    // If we get here, we couldn't find the product in any furniture endpoint
+    console.error("Could not find furniture item:", apiError);
+    console.log(`Furniture item with id ${id} not found in any furniture endpoint`);
+    return null;
     
-    throw new Error("Product not found");
-  } catch (error) {
+  } catch (error: any) {
     console.error("There was a problem fetching the product:", error);
-    // Fallback to mock data if API call fails
-    if (process.env.NODE_ENV === "development") {
-      console.log("Falling back to mock data");
-      return mockGetProduct(id) as Promise<any>;
-    }
-    throw error;
+    return null;
   }
 }
 
@@ -402,6 +467,7 @@ export async function createEstimate(image: File, details: { requirements: strin
 
 export const adminApi = {
   getFurniture: async () => {
+    console.log("Fetching furniture from:", `${API_URL}/admin/furniture`);
     const response = await fetch(`${API_URL}/admin/furniture`, {
       credentials: 'include',
       headers: getAuthHeaders(),
@@ -416,9 +482,8 @@ export const adminApi = {
     
     try {
       // For FormData, we should NOT set Content-Type header
-      const headers = {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`
+      const headers: Record<string, string> = {
+        'Authorization': token ? `Bearer ${token}` : ''
       };
       
       console.log('Request headers:', headers);
@@ -452,14 +517,14 @@ export const adminApi = {
     try {
       // For FormData, we should NOT set Content-Type header
       // The browser will automatically set the correct Content-Type with boundary
-      const headers = data instanceof FormData 
+      const token = getCookie('token');
+      const headers: Record<string, string> = data instanceof FormData 
         ? { 
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${getCookie('token')}`
+            'Authorization': token ? `Bearer ${token}` : ''
           }
         : {
-            ...getAuthHeaders(),
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
           };
       
       console.log('Request headers:', headers);
@@ -494,6 +559,39 @@ export const adminApi = {
     });
     if (!response.ok) throw new Error('Failed to delete furniture');
     return response.json();
+  },
+
+  // Utility function for handling file uploads
+  uploadImages: async (files: File[]): Promise<string[]> => {
+    if (!files.length) return [];
+    
+    try {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('image', file);
+      });
+      
+      const response = await fetch(`${API_URL}/admin/upload`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${getCookie('token')}`
+        },
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to upload images: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      return data.urls || [];
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw error;
+    }
   },
 
   getEstimates: async () => {
@@ -564,5 +662,140 @@ export async function getOrders(userId: string) {
     console.error('Error fetching orders:', error)
     // Return empty array instead of throwing
     return []
+  }
+}
+
+export async function getOrder(orderId: string) {
+  try {
+    const token = getCookie('token')
+    if (!token) {
+      throw new Error('Authentication required')
+    }
+
+    const response = await fetch(`${API_URL}/orders/${orderId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch order')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching order:', error)
+    // Return empty object instead of throwing
+    return {}
+  }
+}
+
+export async function createOrder(orderData: any) {
+  try {
+    const token = getCookie('token')
+    if (!token) {
+      throw new Error('Authentication required')
+    }
+
+    const response = await fetch(`${API_URL}/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(orderData)
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to create order')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error creating order:', error)
+    throw error
+  }
+}
+
+export async function createCheckoutSession(items: any[]) {
+  try {
+    const token = getCookie('token')
+    if (!token) {
+      throw new Error('Authentication required')
+    }
+
+    const response = await fetch(`${API_URL}/checkout/create-session`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(items)
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to create checkout session')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error creating checkout session:', error)
+    throw error
+  }
+}
+
+export async function getEstimate(estimateId: string) {
+  try {
+    const token = getCookie('token')
+    if (!token) {
+      throw new Error('Authentication required')
+    }
+
+    const response = await fetch(`${API_URL}/estimate/${estimateId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch estimate')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching estimate:', error)
+    throw error
+  }
+}
+
+export async function getUserEstimates(userId: string) {
+  try {
+    const token = getCookie('token')
+    if (!token) {
+      throw new Error('Authentication required')
+    }
+
+    const response = await fetch(`${API_URL}/estimate/user/${userId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user estimates')
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching user estimates:', error)
+    throw error
   }
 }

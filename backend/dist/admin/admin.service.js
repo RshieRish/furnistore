@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b, _c;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminService = void 0;
 const common_1 = require("@nestjs/common");
@@ -82,8 +83,6 @@ exports.AdminService = AdminService = __decorate([
     __param(0, (0, mongoose_1.InjectModel)(furniture_schema_1.Furniture.name)),
     __param(1, (0, mongoose_1.InjectModel)(estimate_schema_1.Estimate.name)),
     __param(2, (0, mongoose_1.InjectModel)(order_schema_1.Order.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model,
-        mongoose_2.Model,
-        mongoose_2.Model])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _b : Object, typeof (_c = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _c : Object])
 ], AdminService);
 //# sourceMappingURL=admin.service.js.map

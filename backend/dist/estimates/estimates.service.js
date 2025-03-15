@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EstimatesService = void 0;
 const common_1 = require("@nestjs/common");
@@ -173,8 +174,6 @@ exports.EstimatesService = EstimatesService;
 exports.EstimatesService = EstimatesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)(estimate_schema_1.Estimate.name)),
-    __metadata("design:paramtypes", [mongoose_2.Model,
-        config_1.ConfigService,
-        estimates_gateway_1.EstimatesGateway])
+    __metadata("design:paramtypes", [typeof (_a = typeof mongoose_2.Model !== "undefined" && mongoose_2.Model) === "function" ? _a : Object, typeof (_b = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _b : Object, estimates_gateway_1.EstimatesGateway])
 ], EstimatesService);
 //# sourceMappingURL=estimates.service.js.map

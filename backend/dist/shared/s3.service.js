@@ -9,6 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 var S3Service_1;
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.S3Service = void 0;
 const common_1 = require("@nestjs/common");
@@ -67,6 +68,6 @@ let S3Service = S3Service_1 = class S3Service {
 exports.S3Service = S3Service;
 exports.S3Service = S3Service = S3Service_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [config_1.ConfigService])
+    __metadata("design:paramtypes", [typeof (_a = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _a : Object])
 ], S3Service);
 //# sourceMappingURL=s3.service.js.map

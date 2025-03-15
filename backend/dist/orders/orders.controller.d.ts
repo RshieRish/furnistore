@@ -6,7 +6,7 @@ export declare class OrdersController {
     private readonly ordersService;
     private readonly productsService;
     constructor(ordersService: OrdersService, productsService: ProductsService);
-    create(createOrderDto: CreateOrderDto, user: User): Promise<import("./schemas/order.schema").Order>;
-    findAll(user: User): Promise<import("./schemas/order.schema").Order[]>;
-    findOne(id: string, user: User): Promise<import("./schemas/order.schema").Order>;
+    create(createOrderDto: CreateOrderDto, user: User): unknown;
+    findAll(user: User): unknown;
+    findOne(id: string, user: User): unknown;
 }

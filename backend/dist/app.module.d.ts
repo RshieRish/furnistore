@@ -3,7 +3,7 @@ export declare class AppController {
     getHealth(): {
         status: string;
         message: string;
-        timestamp: string;
+        timestamp: any;
     };
 }
 export declare class DebugController {

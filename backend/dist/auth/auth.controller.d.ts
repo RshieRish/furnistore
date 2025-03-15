@@ -5,25 +5,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    register(createUserDto: CreateUserDto, response: Response): Promise<{
-        access_token: string;
-        user: {
-            email: string;
-            name: string;
-            role: string;
-            isAdmin: boolean;
-            _id: any;
-        };
-    }>;
-    login(loginDto: LoginDto, response: Response): Promise<{
-        access_token: string;
-        user: {
-            email: string;
-            name: string;
-            role: string;
-            isAdmin: boolean;
-            _id: any;
-        };
-    }>;
+    register(createUserDto: CreateUserDto, response: Response): unknown;
+    login(loginDto: LoginDto, response: Response): unknown;
     getProfile(req: any): any;
 }
